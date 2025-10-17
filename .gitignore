@@ -19,5 +19,3 @@ data/raw/*
  
 # Ignore processed artifacts
 data/processed/*
-
-!data/processed/.gitkeep
