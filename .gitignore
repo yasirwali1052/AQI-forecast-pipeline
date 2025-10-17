@@ -14,5 +14,10 @@ venv/
 
 # Data
 data/raw/*
-data/processed/*
+
 !data/raw/.gitkeep
+ 
+# Ignore processed artifacts
+data/processed/*
+
+!data/processed/.gitkeep
