@@ -1,0 +1,17 @@
+# Environment and secrets
+.env
+*.env
+secrets.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+venv/
+.env/
+
+# Data
+data/raw/*
+!data/raw/.gitkeep
