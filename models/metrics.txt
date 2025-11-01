@@ -1,0 +1,4 @@
+Model: random_forest
+RMSE: 2.22
+MAE:  0.49
+R²:   0.9969
