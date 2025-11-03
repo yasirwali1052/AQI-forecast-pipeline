@@ -19,3 +19,7 @@ data/raw/*
  
 # Ignore processed artifacts
 data/processed/*
+
+# Track feature store outputs
+!data/feature_store/
+!data/feature_store/**
