@@ -4,7 +4,7 @@ Here’s a **detailed and professional GitHub README.md** for your **AQI Forecas
 
 # 🌍 AQI Forecast Project
 
-**🔗 Streamlit App Deployed Here → [Click to View Live Demo](https://your-streamlit-app-link-here)**
+**🔗 Streamlit App Deployed Here → [Click to View Live Demo](https://aqi-forecast-pipeline-4pid7ezwjm4tpfhnszbbsp.streamlit.app/)**
 
 ---
 
