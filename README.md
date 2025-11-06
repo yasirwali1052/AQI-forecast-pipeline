@@ -1,4 +1,5 @@
-🌫️ Air Quality Index (AQI) Forecasting System
+<h1 align="center">🌫️ Air Quality Index (AQI) Forecasting System</h1>
+
 
 **🔗 Streamlit App Deployed Here → [Click to View Live Demo](https://aqi-forecast-pipeline-4pid7ezwjm4tpfhnszbbsp.streamlit.app/)**
 
