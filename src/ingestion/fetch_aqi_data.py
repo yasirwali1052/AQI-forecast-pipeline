@@ -14,7 +14,7 @@ LON = float(os.getenv("LON", "73.0479"))
 CITY = os.getenv("CITY", "Islamabad")
 
 START_DATE = "2025-01-01"
-END_DATE = "2025-11-04"
+END_DATE = "2025-11-06"
 
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "data" / "raw"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
