@@ -11,9 +11,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Add project root to path
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.append(str(PROJECT_ROOT))
+# Add project root to PYTHONPATH so absolute imports work when running as a script
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.feature_store.parquet_store import ParquetFeatureStore
 from src.features.compute_features import compute_overall_aqi, categorize_aqi
