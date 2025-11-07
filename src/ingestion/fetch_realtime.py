@@ -184,8 +184,8 @@ def append_to_feature_store(df):
             truly_new = new_timestamps - existing_timestamps
             
             if not truly_new:
-                print("Data already exists for this timestamp - skipping")
-                return False
+                print("Data already exists for this timestamp - no new data to add")
+                return True  # Not a failure - just no new data yet
             
             # Filter df to only include new timestamps
             df_new = df[df["timestamp"].isin(truly_new)].copy()
@@ -228,7 +228,7 @@ def main():
     
     if df is None or df.empty:
         print("\nNo new data fetched - will retry on next run")
-        return False
+        return True  # Not a failure - API might not have new data yet
     
     # Append to feature store
     success = append_to_feature_store(df)
