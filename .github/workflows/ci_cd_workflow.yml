@@ -1,4 +1,4 @@
-name: AQI Forecast CI/CD Pipeline
+name: AQI  CI/CD Pipeline
 
 on:
   schedule:
