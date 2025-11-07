@@ -1,15 +1,15 @@
-
 import sys
 from pathlib import Path
 import pandas as pd
 import numpy as np
 import joblib
 
-# Add project root to path
+
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from src.models.rf_model import RandomForestAQI
 from src.models.ridge_model import RidgeAQI
+from src.models.linear_model import LinearAQI
 from src.utils.metrics import evaluate
 
 
@@ -50,7 +50,7 @@ def prepare_data(df, shuffle=True, test_size=0.2, random_state=42):
     y = df["AQI"].values
 
     if shuffle:
-        # Shuffle data for random train/test split
+       
         np.random.seed(random_state)
         indices = np.random.permutation(len(X))
         X = X[indices]
@@ -68,18 +68,14 @@ def prepare_data(df, shuffle=True, test_size=0.2, random_state=42):
 
 
 def train_models(X_train, X_test, y_train, y_test, feature_cols):
-    """Train Random Forest and Ridge, return best with full metrics"""
+    """Train Random Forest, Ridge, and Linear models, return best with full metrics"""
     print("\n" + "="*60)
     print("Training Random Forest...")
     print("="*60)
     rf = RandomForestAQI(n_estimators=100, max_depth=20)
     rf.fit(X_train, y_train)
-    
-    # Evaluate on both train and test
     rf_train = evaluate(y_train, rf.predict(X_train))
     rf_test = evaluate(y_test, rf.predict(X_test))
-    
-    # Show feature importance
     importances = rf.feature_importance(feature_cols, top_n=5)
     print("\nTop 5 Important Features:")
     for feature, importance in importances.items():
@@ -90,10 +86,16 @@ def train_models(X_train, X_test, y_train, y_test, feature_cols):
     print("="*60)
     ridge = RidgeAQI(alpha=1.0)
     ridge.fit(X_train, y_train)
-    
-    # Evaluate on both train and test
     ridge_train = evaluate(y_train, ridge.predict(X_train))
     ridge_test = evaluate(y_test, ridge.predict(X_test))
+
+    print("\n" + "="*60)
+    print("Training Linear Regression...")
+    print("="*60)
+    linear = LinearAQI()
+    linear.fit(X_train, y_train)
+    linear_train = evaluate(y_train, linear.predict(X_train))
+    linear_test = evaluate(y_test, linear.predict(X_test))
 
     print("\n" + "="*60)
     print("MODEL COMPARISON")
@@ -103,28 +105,22 @@ def train_models(X_train, X_test, y_train, y_test, feature_cols):
     print("-" * 50)
     print(f"{'Random Forest':<15} {rf_train['rmse']:>10.2f} {rf_train['mae']:>10.2f} {rf_train['r2']:>10.4f}")
     print(f"{'Ridge':<15} {ridge_train['rmse']:>10.2f} {ridge_train['mae']:>10.2f} {ridge_train['r2']:>10.4f}")
+    print(f"{'Linear':<15} {linear_train['rmse']:>10.2f} {linear_train['mae']:>10.2f} {linear_train['r2']:>10.4f}")
     
     print("\n Test Set Metrics:")
     print(f"{'Model':<15} {'RMSE':>10} {'MAE':>10} {'R²':>10}")
     print("-" * 50)
     print(f"{'Random Forest':<15} {rf_test['rmse']:>10.2f} {rf_test['mae']:>10.2f} {rf_test['r2']:>10.4f}")
     print(f"{'Ridge':<15} {ridge_test['rmse']:>10.2f} {ridge_test['mae']:>10.2f} {ridge_test['r2']:>10.4f}")
-    
-    # Check for overfitting (train vs test gap)
-    rf_overfit_check = rf_train['r2'] - rf_test['r2']
-    if rf_overfit_check > 0.1:
-        print(f"\n⚠ Warning: Random Forest shows potential overfitting")
-        print(f"   Train R²: {rf_train['r2']:.4f} | Test R²: {rf_test['r2']:.4f} | Gap: {rf_overfit_check:.4f}")
-    else:
-        print(f"\n✓ Random Forest generalization looks good (R² gap: {rf_overfit_check:.4f})")
+    print(f"{'Linear':<15} {linear_test['rmse']:>10.2f} {linear_test['mae']:>10.2f} {linear_test['r2']:>10.4f}")
 
-    # Select best model based on test RMSE
-    if rf_test['rmse'] < ridge_test['rmse']:
-        best_model, name, metrics = rf, "random_forest", rf_test
-        print(f"\n Best Model: Random Forest (Test RMSE: {rf_test['rmse']:.2f})")
-    else:
-        best_model, name, metrics = ridge, "ridge", ridge_test
-        print(f"\n Best Model: Ridge Regression (Test RMSE: {ridge_test['rmse']:.2f})")
+    models = [
+        (rf, "random_forest", rf_test),
+        (ridge, "ridge", ridge_test),
+        (linear, "linear", linear_test)
+    ]
+    best_model, name, metrics = min(models, key=lambda x: x[2]['rmse'])
+    print(f"\n Best Model: {name.replace('_', ' ').title()} (Test RMSE: {metrics['rmse']:.2f})")
     
     return best_model, name, metrics
 
