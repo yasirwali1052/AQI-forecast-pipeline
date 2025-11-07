@@ -6,6 +6,7 @@ Runs every 10 minutes (configurable)
 import os
 import sys
 import pandas as pd
+import pandas.api.types as ptypes
 import requests
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -37,6 +38,44 @@ WEATHER_PARAMS = ["temperature_2m", "relative_humidity_2m", "surface_pressure", 
 
 
 # ==================== HELPERS ====================
+def _normalize_timestamp(series: pd.Series) -> pd.Series:
+    """Return a timezone-naive datetime series tolerant to mixed formats."""
+    if ptypes.is_datetime64_any_dtype(series):
+        try:
+            return series.dt.tz_localize(None)  # type: ignore[return-value]
+        except AttributeError:
+            return series
+
+    series_str = series.astype(str).str.strip()
+    candidates = (
+        {"format": "mixed", "utc": True},
+        {"format": "ISO8601", "utc": True},
+        {"utc": True},
+    )
+
+    last_error: Exception | None = None
+    for params in candidates:
+        try:
+            parsed = pd.to_datetime(series_str, errors="raise", **params)
+            return parsed.dt.tz_localize(None)
+        except (ValueError, TypeError) as error:
+            last_error = error
+            continue
+
+    cleaned = (
+        series_str.str.replace("Z", "", regex=False)
+        .str.replace(r"([\+\-]\d{2}:?\d{2})$", "", regex=True)
+        .str.replace(r"\.\d{1,9}$", "", regex=True)
+    )
+    try:
+        parsed = pd.to_datetime(cleaned, errors="raise")
+        return parsed
+    except Exception:
+        if last_error is not None:
+            raise last_error
+        raise
+
+
 def fetch_current_data():
     """Fetch current hour data from Open-Meteo API"""
     try:
@@ -128,12 +167,14 @@ def fetch_current_data():
 def append_to_feature_store(df):
     """Append new data to parquet feature store"""
     try:
+        df = df.copy()
+        df["timestamp"] = _normalize_timestamp(df["timestamp"])
         store = ParquetFeatureStore(str(FEATURE_STORE_ROOT))
         
         # Read existing data
         try:
             existing_df = store.read_table(TABLE_NAME)
-            existing_df["timestamp"] = pd.to_datetime(existing_df["timestamp"])
+            existing_df["timestamp"] = _normalize_timestamp(existing_df["timestamp"])
             
             # Check for duplicates by timestamp
             new_timestamps = df["timestamp"].values
@@ -155,7 +196,8 @@ def append_to_feature_store(df):
             combined_df = df
         
         # Add date partition
-        combined_df["date_partition"] = pd.to_datetime(combined_df["timestamp"]).dt.date.astype(str)
+        combined_df["timestamp"] = _normalize_timestamp(combined_df["timestamp"])
+        combined_df["date_partition"] = combined_df["timestamp"].dt.date.astype(str)
         
         # Write back to store
         store.write_table(combined_df, TABLE_NAME, partition_by="date_partition")
