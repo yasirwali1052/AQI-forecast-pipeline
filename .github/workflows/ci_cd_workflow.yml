@@ -2,8 +2,10 @@ name: AQI  CI/CD Pipeline
 
 on:
   schedule:
-    # Run every 10 minutes
-    - cron: '*/10 * * * *'
+    # Run every 1 hour for data fetching
+    - cron: '0 * * * *'
+    # Run daily at 2 AM UTC for model retraining
+    - cron: '0 2 * * *'
   
   workflow_dispatch:  # Allow manual trigger
     inputs:
