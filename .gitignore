@@ -26,5 +26,6 @@ data/feature_store/**
 # Allow committing the parquet feature table for deployment
 !data/feature_store/
 !data/feature_store/parquet/
+!data/feature_store/parquet/aqi_features/
 !data/feature_store/parquet/aqi_features/**
 
