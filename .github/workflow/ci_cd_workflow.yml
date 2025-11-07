@@ -1,0 +1,154 @@
+name: AQI Forecast CI/CD Pipeline
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+  
+  workflow_dispatch:  # Allow manual trigger
+    inputs:
+      job_type:
+        description: 'Job to run'
+        required: true
+        default: 'fetch'
+        type: choice
+        options:
+          - fetch
+          - retrain
+          - both
+
+env:
+  PYTHON_VERSION: '3.10'
+
+jobs:
+  # ==================== DATA FETCH JOB ====================
+  fetch-data:
+    name: Fetch Real-time AQI Data
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'schedule' || 
+      github.event.inputs.job_type == 'fetch' || 
+      github.event.inputs.job_type == 'both'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for proper updates
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 🌍 Fetch real-time data
+        env:
+          LAT: ${{ secrets.LAT || '33.6844' }}
+          LON: ${{ secrets.LON || '73.0479' }}
+          CITY: ${{ secrets.CITY || 'Islamabad' }}
+        run: |
+          echo "Fetching data for $CITY ($LAT, $LON)"
+          python src/ingestion/fetch_realtime.py
+      
+      - name: 💾 Commit updated data
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Check if there are changes
+          if [[ -n $(git status --porcelain data/feature_store/) ]]; then
+            git add data/feature_store/parquet/aqi_features/
+            git commit -m "🤖 Auto-update: Real-time AQI data ($(date -u +"%Y-%m-%d %H:%M UTC"))"
+            echo "DATA_UPDATED=true" >> $GITHUB_ENV
+          else
+            echo "No new data to commit"
+            echo "DATA_UPDATED=false" >> $GITHUB_ENV
+          fi
+      
+      - name: 📤 Push changes
+        if: env.DATA_UPDATED == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+
+  # ==================== MODEL RETRAIN JOB ====================
+  retrain-model:
+    name: Retrain AQI Model
+    runs-on: ubuntu-latest
+    # Run only at 2 AM UTC daily or when manually triggered
+    if: |
+      (github.event_name == 'schedule' && github.event.schedule == '0 2 * * *') ||
+      github.event.inputs.job_type == 'retrain' || 
+      github.event.inputs.job_type == 'both'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: 📦 Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: 🤖 Retrain model
+        run: |
+          echo "Starting model retraining..."
+          python src/models/retrain.py
+      
+      - name: 💾 Commit updated model
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Check if model changed
+          if [[ -n $(git status --porcelain models/) ]]; then
+            git add models/best_model.pkl models/metrics.txt
+            git commit -m "🤖 Auto-retrain: Updated AQI model ($(date -u +"%Y-%m-%d"))"
+            echo "MODEL_UPDATED=true" >> $GITHUB_ENV
+          else
+            echo "No model changes to commit"
+            echo "MODEL_UPDATED=false" >> $GITHUB_ENV
+          fi
+      
+      - name: 📤 Push changes
+        if: env.MODEL_UPDATED == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+      
+      - name: 📊 Upload training metrics
+        if: env.MODEL_UPDATED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: training-metrics-${{ github.run_number }}
+          path: models/metrics.txt
+          retention-days: 30
+
+  # ==================== DEPLOYMENT CHECK ====================
+  check-deployment:
+    name: Verify Streamlit Deployment
+    runs-on: ubuntu-latest
+    needs: [fetch-data]
+    if: always()
+    
+    steps:
+      - name: ✅ Report status
+        run: |
+          echo "Pipeline execution completed"
+          echo "Check Streamlit app for latest predictions"
