@@ -17,7 +17,7 @@ try:
     from apscheduler.triggers.interval import IntervalTrigger
     from apscheduler.triggers.cron import CronTrigger
 except ImportError:
-    print("📦 Installing APScheduler...")
+    print("Installing APScheduler...")
     os.system(f"{sys.executable} -m pip install apscheduler --break-system-packages -q")
     from apscheduler.schedulers.blocking import BlockingScheduler
     from apscheduler.triggers.interval import IntervalTrigger
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 def fetch_data_job():
     """Job to fetch real-time data"""
     logger.info("="*60)
-    logger.info("🌍 Starting data fetch job...")
+    logger.info("Starting data fetch job...")
     logger.info("="*60)
     
     try:
@@ -65,25 +65,25 @@ def fetch_data_job():
         )
         
         if result.returncode == 0:
-            logger.info("✅ Data fetch completed successfully")
+            logger.info("Data fetch completed successfully")
             if result.stdout:
                 for line in result.stdout.strip().split('\n'):
                     logger.info(f"   {line}")
         else:
-            logger.error(f"❌ Data fetch failed with exit code {result.returncode}")
+            logger.error(f"Data fetch failed with exit code {result.returncode}")
             if result.stderr:
                 logger.error(f"   Error: {result.stderr}")
         
     except subprocess.TimeoutExpired:
-        logger.error("❌ Data fetch timed out (>120s)")
+        logger.error("Data fetch timed out (>120s)")
     except Exception as e:
-        logger.error(f"❌ Data fetch job failed: {e}")
+        logger.error(f"Data fetch job failed: {e}")
 
 
 def retrain_model_job():
     """Job to retrain model"""
     logger.info("="*60)
-    logger.info("🤖 Starting model retraining job...")
+    logger.info("Starting model retraining job...")
     logger.info("="*60)
     
     try:
@@ -97,19 +97,19 @@ def retrain_model_job():
         )
         
         if result.returncode == 0:
-            logger.info("✅ Model retraining completed successfully")
+            logger.info("Model retraining completed successfully")
             if result.stdout:
                 for line in result.stdout.strip().split('\n'):
                     logger.info(f"   {line}")
         else:
-            logger.error(f"❌ Model retraining failed with exit code {result.returncode}")
+            logger.error(f"Model retraining failed with exit code {result.returncode}")
             if result.stderr:
                 logger.error(f"   Error: {result.stderr}")
         
     except subprocess.TimeoutExpired:
-        logger.error("❌ Model retraining timed out (>10 min)")
+        logger.error("Model retraining timed out (>10 min)")
     except Exception as e:
-        logger.error(f"❌ Model retraining job failed: {e}")
+        logger.error(f"Model retraining job failed: {e}")
 
 
 # ==================== SCHEDULER SETUP ====================
@@ -126,7 +126,7 @@ def setup_scheduler():
         max_instances=1,
         misfire_grace_time=300  # 5 minutes grace period
     )
-    logger.info("📅 Scheduled: Data fetching every 10 minutes")
+    logger.info("Scheduled: Data fetching every 10 minutes")
     
     # Job 2: Retrain model every 24 hours at 2 AM UTC
     scheduler.add_job(
@@ -137,7 +137,7 @@ def setup_scheduler():
         max_instances=1,
         misfire_grace_time=3600  # 1 hour grace period
     )
-    logger.info("📅 Scheduled: Model retraining daily at 2:00 AM UTC")
+    logger.info("Scheduled: Model retraining daily at 2:00 AM UTC")
     
     return scheduler
 
@@ -146,7 +146,7 @@ def setup_scheduler():
 def main():
     """Main scheduler execution"""
     logger.info("="*60)
-    logger.info("🚀 AQI FORECAST CI/CD SCHEDULER")
+    logger.info("AQI FORECAST CI/CD SCHEDULER")
     logger.info("="*60)
     logger.info(f"   Start time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
     logger.info(f"   Log file: {LOG_FILE}")
@@ -157,20 +157,20 @@ def main():
     logger.info("="*60)
     
     # Run initial fetch immediately
-    logger.info("\n🔥 Running initial data fetch...")
+    logger.info("\nRunning initial data fetch...")
     fetch_data_job()
     
     # Setup and start scheduler
-    logger.info("\n📡 Starting scheduler (Press Ctrl+C to stop)...")
+    logger.info("\nStarting scheduler (Press Ctrl+C to stop)...")
     scheduler = setup_scheduler()
     
     try:
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
-        logger.info("\n⏹️  Scheduler stopped by user")
+        logger.info("\nScheduler stopped by user")
         scheduler.shutdown()
     except Exception as e:
-        logger.error(f"\n❌ Scheduler crashed: {e}")
+        logger.error(f"\nScheduler crashed: {e}")
         scheduler.shutdown()
 
 

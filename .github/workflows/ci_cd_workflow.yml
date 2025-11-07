@@ -34,24 +34,24 @@ jobs:
       github.event.inputs.job_type == 'both'
     
     steps:
-      - name: 📥 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Full history for proper updates
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 🐍 Setup Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
       
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: 🌍 Fetch real-time data
+      - name: Fetch real-time data
         env:
           LAT: ${{ secrets.LAT || '33.6844' }}
           LON: ${{ secrets.LON || '73.0479' }}
@@ -61,7 +61,7 @@ jobs:
           echo "Fetching data for $CITY ($LAT, $LON)"
           python -m src.ingestion.fetch_realtime
       
-      - name: 💾 Commit updated data
+      - name: Commit updated data
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -69,14 +69,14 @@ jobs:
           # Check if there are changes
           if [[ -n $(git status --porcelain data/feature_store/) ]]; then
             git add data/feature_store/parquet/aqi_features/
-            git commit -m "🤖 Auto-update: Real-time AQI data ($(date -u +"%Y-%m-%d %H:%M UTC"))"
+            git commit -m "Auto-update: Real-time AQI data ($(date -u +"%Y-%m-%d %H:%M UTC"))"
             echo "DATA_UPDATED=true" >> $GITHUB_ENV
           else
             echo "No new data to commit"
             echo "DATA_UPDATED=false" >> $GITHUB_ENV
           fi
       
-      - name: 📤 Push changes
+      - name: Push changes
         if: env.DATA_UPDATED == 'true'
         uses: ad-m/github-push-action@master
         with:
@@ -95,29 +95,29 @@ jobs:
       github.event.inputs.job_type == 'both'
     
     steps:
-      - name: 📥 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: 🐍 Setup Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
       
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: 🤖 Retrain model
+      - name: Retrain model
         run: |
           echo "Starting model retraining..."
           python src/models/retrain.py
       
-      - name: 💾 Commit updated model
+      - name: Commit updated model
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -125,14 +125,14 @@ jobs:
           # Check if model changed
           if [[ -n $(git status --porcelain models/) ]]; then
             git add models/best_model.pkl models/metrics.txt
-            git commit -m "🤖 Auto-retrain: Updated AQI model ($(date -u +"%Y-%m-%d"))"
+            git commit -m "Auto-retrain: Updated AQI model ($(date -u +"%Y-%m-%d"))"
             echo "MODEL_UPDATED=true" >> $GITHUB_ENV
           else
             echo "No model changes to commit"
             echo "MODEL_UPDATED=false" >> $GITHUB_ENV
           fi
       
-      - name: 📤 Push changes
+      - name: Push changes
         if: env.MODEL_UPDATED == 'true'
         uses: ad-m/github-push-action@master
         with:
@@ -140,7 +140,7 @@ jobs:
           branch: ${{ github.ref_name || 'main' }}
           force: false
       
-      - name: 📊 Upload training metrics
+      - name: Upload training metrics
         if: env.MODEL_UPDATED == 'true'
         uses: actions/upload-artifact@v4
         with:
@@ -156,7 +156,7 @@ jobs:
     if: always()
     
     steps:
-      - name: ✅ Report status
+      - name: Report status
         run: |
           echo "Pipeline execution completed"
           echo "Check Streamlit app for latest predictions"

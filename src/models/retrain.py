@@ -42,16 +42,16 @@ def load_latest_data():
         df["timestamp"] = pd.to_datetime(df["timestamp"])
         df.sort_values("timestamp", inplace=True)
         
-        print(f"📊 Loaded {len(df):,} rows from feature store")
+        print(f"Loaded {len(df):,} rows from feature store")
         print(f"   Date range: {df['timestamp'].min()} to {df['timestamp'].max()}")
         
         return df
         
     except FileNotFoundError:
-        print("❌ Feature store not found. Run data ingestion first.")
+        print("Feature store not found. Run data ingestion first.")
         return None
     except Exception as e:
-        print(f"❌ Error loading data: {e}")
+        print(f"Error loading data: {e}")
         return None
 
 
@@ -75,11 +75,11 @@ def prepare_training_data(df, test_size=0.2, use_recent_only=False, recent_days=
     if use_recent_only:
         cutoff_date = df["timestamp"].max() - pd.Timedelta(days=recent_days)
         df = df[df["timestamp"] >= cutoff_date].copy()
-        print(f"📅 Using only data from last {recent_days} days: {len(df):,} rows")
+        print(f"Using only data from last {recent_days} days: {len(df):,} rows")
     
     # Check for minimum data requirement
     if len(df) < MIN_ROWS_REQUIRED:
-        print(f"⚠️  Insufficient data: {len(df)} rows (minimum {MIN_ROWS_REQUIRED} required)")
+        print(f"Insufficient data: {len(df)} rows (minimum {MIN_ROWS_REQUIRED} required)")
         return None, None, None, None, None
     
     # Drop rows with missing values
@@ -93,7 +93,7 @@ def prepare_training_data(df, test_size=0.2, use_recent_only=False, recent_days=
     X_train, X_test = X[:split_idx], X[split_idx:]
     y_train, y_test = y[:split_idx], y[split_idx:]
     
-    print(f"🔧 Features: {len(feature_cols)} | Train: {len(X_train):,} | Test: {len(X_test):,}")
+    print(f"Features: {len(feature_cols)} | Train: {len(X_train):,} | Test: {len(X_test):,}")
     
     return X_train, X_test, y_train, y_test, feature_cols
 
@@ -101,7 +101,7 @@ def prepare_training_data(df, test_size=0.2, use_recent_only=False, recent_days=
 def train_and_select_best(X_train, X_test, y_train, y_test, feature_cols):
     """Train multiple models and select the best one"""
     print("\n" + "="*60)
-    print("🤖 TRAINING MODELS")
+    print("TRAINING MODELS")
     print("="*60)
     
     models = []
@@ -116,7 +116,7 @@ def train_and_select_best(X_train, X_test, y_train, y_test, feature_cols):
         models.append(("Random Forest", rf, rf_train_metrics, rf_test_metrics))
         print(f"   Test RMSE: {rf_test_metrics['rmse']:.2f}, R²: {rf_test_metrics['r2']:.4f}")
     except Exception as e:
-        print(f"   ❌ Random Forest failed: {e}")
+        print(f"   Random Forest failed: {e}")
     
     # Train Ridge
     try:
@@ -128,7 +128,7 @@ def train_and_select_best(X_train, X_test, y_train, y_test, feature_cols):
         models.append(("Ridge", ridge, ridge_train_metrics, ridge_test_metrics))
         print(f"   Test RMSE: {ridge_test_metrics['rmse']:.2f}, R²: {ridge_test_metrics['r2']:.4f}")
     except Exception as e:
-        print(f"   ❌ Ridge failed: {e}")
+        print(f"   Ridge failed: {e}")
     
     # Train Linear
     try:
@@ -140,17 +140,17 @@ def train_and_select_best(X_train, X_test, y_train, y_test, feature_cols):
         models.append(("Linear", linear, linear_train_metrics, linear_test_metrics))
         print(f"   Test RMSE: {linear_test_metrics['rmse']:.2f}, R²: {linear_test_metrics['r2']:.4f}")
     except Exception as e:
-        print(f"   ❌ Linear failed: {e}")
+        print(f"   Linear failed: {e}")
     
     if not models:
-        print("\n❌ All models failed to train")
+        print("\nAll models failed to train")
         return None, None, None
     
     # Select best model by test RMSE
     best_name, best_model, train_metrics, test_metrics = min(models, key=lambda x: x[3]['rmse'])
     
     print("\n" + "="*60)
-    print("🏆 BEST MODEL SELECTED")
+    print("BEST MODEL SELECTED")
     print("="*60)
     print(f"Model: {best_name}")
     print(f"Test RMSE: {test_metrics['rmse']:.2f}")
@@ -178,13 +178,13 @@ def save_model_and_metrics(model, model_name, metrics):
             f.write(f"Test MAE:  {metrics['mae']:.2f}\n")
             f.write(f"Test R²:   {metrics['r2']:.4f}\n")
         
-        print(f"\n✅ Saved model to: {model_path}")
-        print(f"✅ Saved metrics to: {metrics_path}")
+        print(f"\nSaved model to: {model_path}")
+        print(f"Saved metrics to: {metrics_path}")
         
         return True
         
     except Exception as e:
-        print(f"\n❌ Error saving model: {e}")
+        print(f"\nError saving model: {e}")
         return False
 
 
@@ -192,21 +192,21 @@ def save_model_and_metrics(model, model_name, metrics):
 def main():
     """Main retraining pipeline"""
     print("="*60)
-    print("🔄 AUTOMATED MODEL RETRAINING")
+    print("AUTOMATED MODEL RETRAINING")
     print(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}")
     print("="*60)
     
     # Load latest data
     df = load_latest_data()
     if df is None or df.empty:
-        print("\n❌ Retraining aborted: No data available")
+        print("\nRetraining aborted: No data available")
         return False
     
     # Prepare training data (use last 60 days for faster retraining)
     result = prepare_training_data(df, test_size=0.2, use_recent_only=True, recent_days=60)
     
     if result[0] is None:
-        print("\n❌ Retraining aborted: Insufficient data")
+        print("\nRetraining aborted: Insufficient data")
         return False
     
     X_train, X_test, y_train, y_test, feature_cols = result
@@ -217,7 +217,7 @@ def main():
     )
     
     if best_model is None:
-        print("\n❌ Retraining failed: No successful model")
+        print("\nRetraining failed: No successful model")
         return False
     
     # Save model and metrics
@@ -225,12 +225,12 @@ def main():
     
     if success:
         print("\n" + "="*60)
-        print("✅ RETRAINING COMPLETED SUCCESSFULLY")
+        print("RETRAINING COMPLETED SUCCESSFULLY")
         print("="*60)
         return True
     else:
         print("\n" + "="*60)
-        print("❌ RETRAINING FAILED")
+        print("RETRAINING FAILED")
         print("="*60)
         return False
 

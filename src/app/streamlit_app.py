@@ -142,7 +142,7 @@ def get_pollutant_status(value: float, pollutant: str) -> tuple:
 
 # ---------------------- STREAMLIT APP ----------------------
 def main() -> None:
-    st.set_page_config(page_title="🌫️ AQI Forecast", layout="wide")
+    st.set_page_config(page_title="AQI Forecast", layout="wide")
     
     # Custom CSS for better styling
     st.markdown("""
@@ -172,7 +172,7 @@ def main() -> None:
     """, unsafe_allow_html=True)
     
     # Header
-    st.title("🌫️ Air Quality Index Forecast")
+    st.title("Air Quality Index Forecast")
     st.markdown("**Real-time predictions for the next 3 days** based on historical patterns and environmental factors")
     st.divider()
 
@@ -193,10 +193,11 @@ def main() -> None:
     st.subheader("3-Day AQI Forecast")
     st.caption("Predicted Air Quality Index with health implications")
     
-    # Predict future 3 days
+    # Predict future 3 days from TODAY (not from last data date)
     feature_cols = get_feature_columns()
-    last_date = last7["date"].max()
-    forecast_start = datetime.combine(last_date, datetime.min.time()) + timedelta(days=1)
+    today = datetime.now().date()
+    # Always predict starting from tomorrow
+    forecast_start = datetime.combine(today, datetime.min.time()) + timedelta(days=1)
     future_df = make_future_feature_frame(last7, forecast_start, days=3)
 
     X_future = future_df[feature_cols]

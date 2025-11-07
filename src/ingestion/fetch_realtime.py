@@ -110,7 +110,7 @@ def fetch_current_data():
         weather_data = weather_resp.json().get("hourly", {})
         
         if not air_data or not weather_data:
-            print("❌ Empty response from API")
+            print("Empty response from API")
             return None
         
         # Convert to DataFrames
@@ -131,7 +131,7 @@ def fetch_current_data():
         df = df.sort_values("timestamp").tail(1)
         
         if df.empty:
-            print("❌ No data available for current hour")
+            print("No data available for current hour")
             return None
         
         # Add metadata
@@ -147,20 +147,20 @@ def fetch_current_data():
         df.dropna(subset=["pm2_5", "pm10", "AQI"], inplace=True)
         
         if df.empty:
-            print("❌ No valid data after processing")
+            print("No valid data after processing")
             return None
         
-        print(f"✅ Fetched {len(df)} row(s) - Latest: {df['timestamp'].iloc[0]}")
+        print(f"Fetched {len(df)} row(s) - Latest: {df['timestamp'].iloc[0]}")
         print(f"   AQI: {df['AQI'].iloc[0]:.1f} ({df['AQI_Category'].iloc[0]})")
         print(f"   PM2.5: {df['pm2_5'].iloc[0]:.1f} μg/m³, PM10: {df['pm10'].iloc[0]:.1f} μg/m³")
         
         return df
         
     except requests.exceptions.RequestException as e:
-        print(f"❌ API Request failed: {e}")
+        print(f"API Request failed: {e}")
         return None
     except Exception as e:
-        print(f"❌ Error fetching data: {e}")
+        print(f"Error fetching data: {e}")
         return None
 
 
@@ -176,23 +176,29 @@ def append_to_feature_store(df):
             existing_df = store.read_table(TABLE_NAME)
             existing_df["timestamp"] = _normalize_timestamp(existing_df["timestamp"])
             
-            # Check for duplicates by timestamp
-            new_timestamps = df["timestamp"].values
-            mask = ~existing_df["timestamp"].isin(new_timestamps)
+            # Check for duplicates by timestamp - check if new timestamps already exist
+            new_timestamps = set(df["timestamp"].values)
+            existing_timestamps = set(existing_df["timestamp"].values)
             
-            if not mask.any():
-                print("⚠️  Data already exists for this timestamp - skipping")
+            # Find truly new timestamps
+            truly_new = new_timestamps - existing_timestamps
+            
+            if not truly_new:
+                print("Data already exists for this timestamp - skipping")
                 return False
             
+            # Filter df to only include new timestamps
+            df_new = df[df["timestamp"].isin(truly_new)].copy()
+            
             # Append new data
-            combined_df = pd.concat([existing_df, df], ignore_index=True)
+            combined_df = pd.concat([existing_df, df_new], ignore_index=True)
             combined_df.sort_values("timestamp", inplace=True)
             combined_df.drop_duplicates(subset=["timestamp"], keep="last", inplace=True)
             
-            print(f"📊 Appending to existing store: {len(existing_df)} + {len(df)} = {len(combined_df)} rows")
+            print(f"Appending to existing store: {len(existing_df)} existing + {len(df_new)} new = {len(combined_df)} total rows")
             
         except FileNotFoundError:
-            print("📦 Creating new feature store")
+            print("Creating new feature store")
             combined_df = df
         
         # Add date partition
@@ -202,11 +208,11 @@ def append_to_feature_store(df):
         # Write back to store
         store.write_table(combined_df, TABLE_NAME, partition_by="date_partition")
         
-        print(f"✅ Successfully updated feature store at {FEATURE_STORE_ROOT / TABLE_NAME}")
+        print(f"Successfully updated feature store at {FEATURE_STORE_ROOT / TABLE_NAME}")
         return True
         
     except Exception as e:
-        print(f"❌ Error updating feature store: {e}")
+        print(f"Error updating feature store: {e}")
         return False
 
 
@@ -214,25 +220,25 @@ def append_to_feature_store(df):
 def main():
     """Main execution function"""
     print("="*60)
-    print("🌍 REAL-TIME AQI DATA FETCHER")
+    print("REAL-TIME AQI DATA FETCHER")
     print("="*60)
     
     # Fetch current data
     df = fetch_current_data()
     
     if df is None or df.empty:
-        print("\n⚠️  No new data fetched - will retry on next run")
+        print("\nNo new data fetched - will retry on next run")
         return False
     
     # Append to feature store
     success = append_to_feature_store(df)
     
     if success:
-        print("\n✅ Real-time update completed successfully")
+        print("\nReal-time update completed successfully")
         print("="*60)
         return True
     else:
-        print("\n❌ Failed to update feature store")
+        print("\nFailed to update feature store")
         print("="*60)
         return False
 
