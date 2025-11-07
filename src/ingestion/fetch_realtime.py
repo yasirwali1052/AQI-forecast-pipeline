@@ -127,7 +127,15 @@ def fetch_current_data():
         # Merge air and weather
         df = pd.merge(air_df, weather_df, on="timestamp", how="inner")
         
-        # Get only the latest complete hour
+        # Filter out future timestamps (forecast data) - only use current/past data
+        now = datetime.utcnow()
+        df = df[df["timestamp"] <= now].copy()
+        
+        if df.empty:
+            print("No current/past data available (only forecast data)")
+            return None
+        
+        # Get only the latest complete hour (from current/past data only)
         df = df.sort_values("timestamp").tail(1)
         
         if df.empty:
