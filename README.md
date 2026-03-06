@@ -243,7 +243,7 @@ This ensures the system continuously learns and updates predictions.
 
 **Developed by:** *Yasir Wali*
 🎓 Final Year Project (AI / Data Engineering Pipeline)
-📧 Contact: [[your.email@example.com](yasirwali301302@gmail.com)]
+📧 Contact: [[yasirwali301302@gmail.com](yasirwali301302@gmail.com)]
 🌐 GitHub: [https://github.com/yasirwali1052](https://github.com/yasirwali1052)
 
 ---
